@@ -225,9 +225,14 @@ critical path yet.
 - ✅ **Phase 1 — MVP**: PostgreSQL, FastAPI, React/TypeScript, Docker,
   core schema, player & draft-pick valuation, Trade Center, executive
   dashboard.
-- **Phase 2 — Team Intelligence**: full Team Needs Engine, Team Fit
-  Engine, Roster Impact (before/after), Draft Capital Dashboard,
-  Contract Impact detail, Competitive Window classifier.
+- ✅ **Phase 2 — Team Intelligence**: full Team Needs Engine
+  (`GET /api/team/{id}/needs`), full Team Fit Engine (need + timeline +
+  contract fit), Competitive Window classifier
+  (`GET /api/team/{id}/timeline`), Roster Impact before/after
+  (`GET /api/team/{id}/roster-impact`, also embedded per trade side),
+  Draft Capital Dashboard page (`GET /api/analytics/draft-capital`),
+  and detailed Contract Impact (this-year + ~3yr outlook) embedded in
+  every trade analysis.
 - **Phase 3 — Advanced Trade Analytics**: Trade Simulator with saved
   scenarios, Scenario Comparison, full Opportunity Cost, Trade Value
   Discrepancy Finder as a first-class page, Sensitivity Analysis,

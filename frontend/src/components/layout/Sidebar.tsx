@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   { to: "/", label: "Front Office Dashboard" },
   { to: "/trade-center", label: "Trade Center" },
+  { to: "/draft-capital", label: "Draft Capital" },
 ];
 
 export function Sidebar() {

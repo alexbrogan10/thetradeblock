@@ -4,6 +4,7 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { DemoBanner } from "./components/layout/DemoBanner";
 import { Dashboard } from "./pages/Dashboard";
 import { TradeCenter } from "./pages/TradeCenter";
+import { DraftCapitalPage } from "./pages/DraftCapital";
 import { api } from "./services/api";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/trade-center" element={<TradeCenter />} />
+            <Route path="/draft-capital" element={<DraftCapitalPage />} />
           </Routes>
         </main>
       </div>

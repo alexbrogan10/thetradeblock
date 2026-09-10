@@ -21,6 +21,24 @@ class AssetValueOut(BaseModel):
     value: float
 
 
+class ContractImpactOut(BaseModel):
+    cap_added_this_year: float
+    cap_freed_this_year: float
+    dead_cap_incurred: float
+    net_cap_impact_this_year: float
+    future_cap_added_3yr: float
+    future_cap_freed_3yr: float
+    net_multi_year_impact: float
+    note: str
+
+
+class PositionImpactOut(BaseModel):
+    position: str
+    before: float
+    after: float
+    change: float
+
+
 class TeamAnalysisOut(BaseModel):
     team_id: int
     team_name: str
@@ -46,7 +64,12 @@ class TeamAnalysisOut(BaseModel):
     risk_mitigators: list[str]
 
     timeline_alignment: float
+    competitive_window: str
     opportunity_cost_notes: list[str]
+
+    contract_impact: ContractImpactOut
+    roster_impact: list[PositionImpactOut]
+    team_fit_explanations: list[str]
 
     assessment: Literal[
         "Strongly Favorable",

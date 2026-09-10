@@ -65,6 +65,64 @@ export interface AssetValue {
   value: number;
 }
 
+export interface ContractImpact {
+  cap_added_this_year: number;
+  cap_freed_this_year: number;
+  dead_cap_incurred: number;
+  net_cap_impact_this_year: number;
+  future_cap_added_3yr: number;
+  future_cap_freed_3yr: number;
+  net_multi_year_impact: number;
+  note: string;
+}
+
+export interface PositionImpact {
+  position: string;
+  before: number;
+  after: number;
+  change: number;
+}
+
+export interface PositionNeed {
+  position: string;
+  priority: "Critical Need" | "Major Need" | "Moderate Need" | "Minor Need" | "Strong Position";
+  need_score: number;
+  current_depth: number;
+  starter_quality: number | null;
+  future_need: string;
+  reasons: string[];
+}
+
+export interface TeamNeeds {
+  team: Team;
+  needs: PositionNeed[];
+}
+
+export interface Timeline {
+  team: Team;
+  classification: "Rebuilding" | "Developing" | "Competitive" | "Contender" | "Win Now";
+  timeline_score: number;
+  team_strength: number;
+  average_age: number;
+  veteran_pct: number;
+  young_pct: number;
+  draft_capital_percentile: number;
+  reasons: string[];
+}
+
+export interface DraftCapitalYear {
+  year: number;
+  by_round: Record<string, number>;
+  estimated_value: number;
+}
+
+export interface DraftCapital {
+  team: Team;
+  total_picks: number;
+  estimated_total_value: number;
+  by_year: DraftCapitalYear[];
+}
+
 export interface TeamAnalysis {
   team_id: number;
   team_name: string;
@@ -85,7 +143,11 @@ export interface TeamAnalysis {
   risk_drivers: string[];
   risk_mitigators: string[];
   timeline_alignment: number;
+  competitive_window: "Rebuilding" | "Developing" | "Competitive" | "Contender" | "Win Now";
   opportunity_cost_notes: string[];
+  contract_impact: ContractImpact;
+  roster_impact: PositionImpact[];
+  team_fit_explanations: string[];
   assessment:
     | "Strongly Favorable"
     | "Favorable"

@@ -1,9 +1,12 @@
 import type {
   DashboardOverview,
+  DraftCapital,
   DraftPick,
   Player,
   PlayerDetail,
   Team,
+  TeamNeeds,
+  Timeline,
   TradeAnalysisResult,
 } from "../types";
 
@@ -48,4 +51,8 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getDashboard: () => request<DashboardOverview>("/api/analytics/dashboard"),
+  getTeamNeeds: (teamId: number) => request<TeamNeeds>(`/api/team/${teamId}/needs`),
+  getTeamTimeline: (teamId: number) => request<Timeline>(`/api/team/${teamId}/timeline`),
+  getTeamDraftCapital: (teamId: number) => request<DraftCapital>(`/api/team/${teamId}/draft-capital`),
+  getAllTeamsDraftCapital: () => request<DraftCapital[]>("/api/analytics/draft-capital"),
 };

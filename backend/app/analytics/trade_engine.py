@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
+from app.analytics.competitive_window import classify_team_timeline
 from app.analytics.draft_pick_valuation import (
     PICK_POINTS_TO_ASSET_SCALE,
     evaluate_draft_pick,
@@ -18,6 +19,9 @@ from app.analytics.player_valuation import (
     compute_position_average_aav,
     evaluate_player,
 )
+from app.analytics.team_fit import compute_team_fit
+from app.analytics.team_needs import evaluate_team_needs
+from app.analytics.roster_impact import compute_roster_impact
 from app.config import settings
 from app.models.contract import Contract
 from app.models.draft_pick import DraftPick
@@ -77,34 +81,25 @@ def _valuate_picks(picks: list[DraftPick]):
     }
 
 
-def _roster_fit(db: Session, team: Team, received_players: list[Player], excluded_ids: set[int]) -> tuple[float, list[str]]:
+def _roster_fit(
+    team: Team,
+    received_players: list[Player],
+    team_needs: list,
+    timeline,
+) -> tuple[float, list[str]]:
+    """Full Team Fit Engine (Section 17): need score + timeline/age +
+    contract-length fit, replacing the Phase 1 depth-count heuristic."""
     if not received_players:
         return 50.0, ["No players received in this trade; roster fit is not directly applicable."]
 
+    needs_by_position = {n.position: n for n in team_needs}
     notes = []
     fit_scores = []
     for player in received_players:
-        depth_count = (
-            db.query(Player)
-            .filter(
-                Player.team_id == team.id,
-                Player.position == player.position,
-                Player.status == "active",
-                ~Player.id.in_(excluded_ids) if excluded_ids else True,
-            )
-            .count()
-        )
-        fit = 100 - depth_count * 15
-        if player.age <= 26:
-            fit += 5
-        elif player.age >= 32:
-            fit -= 5
-        fit = max(5.0, min(100.0, fit))
-        fit_scores.append(fit)
-        if depth_count == 0:
-            notes.append(f"{player.name} would fill a position with no current depth at {team.abbreviation}.")
-        elif depth_count >= 3:
-            notes.append(f"{team.abbreviation} already has {depth_count} active {player.position}s on the roster.")
+        position_need = needs_by_position.get(player.position)
+        fit_result = compute_team_fit(player, player.contract, position_need, timeline)
+        fit_scores.append(fit_result.score)
+        notes.append(f"{player.name}: {fit_result.explanation}")
     return sum(fit_scores) / len(fit_scores), notes
 
 
@@ -150,30 +145,94 @@ def _risk_assessment(received_players: list[Player], player_values: dict, contra
     return level, drivers, mitigators
 
 
-def _timeline_alignment(db: Session, team: Team, received_players: list[Player]) -> tuple[float, list[str]]:
-    roster = db.query(Player).filter(Player.team_id == team.id, Player.status == "active").all()
-    avg_age = sum(p.age for p in roster) / len(roster) if roster else 27.0
-    leaning = "win-now" if avg_age >= 27.0 else "developing"
+def _timeline_alignment(
+    team: Team, received_players: list[Player], received_picks: list[DraftPick], timeline
+) -> tuple[float, list[str]]:
+    """Full Competitive Window classifier (Section 20), replacing the
+    Phase 1 average-age proxy."""
+    classification = timeline.classification
+    notes = [
+        f"{team.abbreviation} is classified '{classification}' "
+        f"(timeline score {timeline.timeline_score:.0f}/100)."
+    ] + timeline.reasons
 
-    if not received_players:
-        return 50.0, [f"{team.abbreviation}'s roster average age ({avg_age:.1f}) suggests a {leaning} timeline."]
+    if not received_players and not received_picks:
+        return 50.0, notes
 
     score = 50.0
-    notes = [f"{team.abbreviation}'s roster average age is {avg_age:.1f}, suggesting a {leaning} competitive timeline."]
+    prefers_picks = classification in ("Rebuilding", "Developing")
+    prefers_proven = classification in ("Win Now", "Contender")
+
     for player in received_players:
-        if leaning == "win-now" and player.age <= 29:
-            score += 8
-            notes.append(f"{player.name} (age {player.age}) fits a win-now timeline.")
-        elif leaning == "win-now" and player.age > 32:
-            score -= 8
-            notes.append(f"{player.name} (age {player.age}) is older than ideal even for a win-now roster.")
-        elif leaning == "developing" and player.age <= 25:
-            score += 8
-            notes.append(f"{player.name} (age {player.age}) aligns with a developing roster's timeline.")
-        elif leaning == "developing" and player.age >= 30:
-            score -= 8
-            notes.append(f"{player.name} (age {player.age}) is a shorter-term asset for a team still developing.")
+        target_age = 24 if prefers_picks else 28 if prefers_proven else 27
+        distance = abs(player.age - target_age)
+        contribution = max(-15.0, 15.0 - distance * 2.5)
+        score += contribution
+        if contribution > 3:
+            notes.append(f"{player.name} (age {player.age}) fits a {classification.lower()} timeline.")
+        elif contribution < -3:
+            notes.append(f"{player.name} (age {player.age}) is a mismatch for a {classification.lower()} timeline.")
+
+    if received_picks and prefers_picks:
+        score += 8
+        notes.append("Additional draft capital aligns well with a timeline built around future assets.")
+    elif received_picks and prefers_proven:
+        score -= 3
+        notes.append("Draft picks add less immediate value for a team prioritizing near-term contention.")
+
     return max(0.0, min(100.0, score)), notes
+
+
+def _contract_impact(given_players: list[Player], received_players: list[Player]) -> dict:
+    """Section 12 - Contract Analysis, applied to a hypothetical trade.
+
+    Distinguishes this-year cap impact from an approximate multi-year
+    (3-year) outlook. All figures are derived from the contract data on
+    file -- demo/estimated unless a licensed data source is connected
+    (Section 12: distinguish observed data from model estimates).
+    """
+    cap_added = sum((p.contract.cap_hit if p.contract else 0.0) for p in received_players)
+    cap_freed = sum((p.contract.cap_hit if p.contract else 0.0) for p in given_players)
+
+    dead_cap = 0.0
+    for p in given_players:
+        if p.contract and p.contract.guaranteed_money:
+            factor = 0.4 if p.contract.years_remaining > 1 else 0.15
+            dead_cap += p.contract.guaranteed_money * factor
+
+    def _multi_year(players: list[Player]) -> float:
+        total = 0.0
+        for p in players:
+            if p.contract and p.contract.annual_value:
+                years = max(1, min(3, p.contract.years_remaining or 1))
+                total += p.contract.annual_value * years
+        return total
+
+    future_added = _multi_year(received_players)
+    future_freed = _multi_year(given_players)
+
+    net_this_year = cap_freed - cap_added - dead_cap
+    net_multi_year = future_freed - future_added - dead_cap
+
+    if net_this_year > 1 and net_multi_year > 1:
+        note = "Frees cap space both this year and over the following seasons."
+    elif net_this_year < -1 and net_multi_year < -1:
+        note = "Adds cap commitment both this year and over the following seasons."
+    elif net_this_year > 1 >= net_multi_year:
+        note = "Frees cap space immediately, but the multi-year outlook is closer to neutral or negative."
+    else:
+        note = "Cap impact is roughly neutral relative to the assets already on the books."
+
+    return {
+        "cap_added_this_year": round(cap_added, 2),
+        "cap_freed_this_year": round(cap_freed, 2),
+        "dead_cap_incurred": round(dead_cap, 2),
+        "net_cap_impact_this_year": round(net_this_year, 2),
+        "future_cap_added_3yr": round(future_added, 2),
+        "future_cap_freed_3yr": round(future_freed, 2),
+        "net_multi_year_impact": round(net_multi_year, 2),
+        "note": note,
+    }
 
 
 def _assessment_label(combined: float) -> str:
@@ -226,6 +285,15 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
     player_values = _valuate_players(db, all_players, league_avg_aav)
     pick_values = _valuate_picks(picks_a + picks_b)
 
+    team_needs_by_team = {
+        team_a.id: evaluate_team_needs(db, team_a.id),
+        team_b.id: evaluate_team_needs(db, team_b.id),
+    }
+    timeline_by_team = {
+        team_a.id: classify_team_timeline(db, team_a),
+        team_b.id: classify_team_timeline(db, team_b),
+    }
+
     def build_side(
         team: Team,
         given_players: list[Player],
@@ -233,6 +301,8 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
         received_players: list[Player],
         received_picks: list[DraftPick],
     ):
+        team_needs = team_needs_by_team[team.id]
+        timeline = timeline_by_team[team.id]
         gives = [
             {"asset_type": "player", "asset_id": p.id, "label": f"{p.name} ({p.position})",
              "value": player_values[p.id].valuation}
@@ -262,21 +332,27 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
             - (player_value_given + draft_capital_given / PICK_POINTS_TO_ASSET_SCALE)
         )
 
-        cap_given = sum((p.contract.cap_hit if p.contract else 0.0) for p in given_players)
-        cap_received = sum((p.contract.cap_hit if p.contract else 0.0) for p in received_players)
-        dead_cap = 0.0
-        for p in given_players:
-            if p.contract and p.contract.guaranteed_money:
-                factor = 0.4 if p.contract.years_remaining > 1 else 0.15
-                dead_cap += p.contract.guaranteed_money * factor
-        financial_impact = cap_given - cap_received - dead_cap
+        contract_impact = _contract_impact(given_players, received_players)
+        cap_given = contract_impact["cap_freed_this_year"]
+        cap_received = contract_impact["cap_added_this_year"]
+        dead_cap = contract_impact["dead_cap_incurred"]
+        financial_impact = contract_impact["net_cap_impact_this_year"]
 
-        excluded_ids = {p.id for p in given_players}
-        roster_fit_score, fit_notes = _roster_fit(db, team, received_players, excluded_ids)
+        roster_fit_score, fit_notes = _roster_fit(team, received_players, team_needs, timeline)
         risk_level, risk_drivers, risk_mitigators = _risk_assessment(
             received_players, player_values, {}
         )
-        timeline_alignment, timeline_notes = _timeline_alignment(db, team, received_players)
+        timeline_alignment, timeline_notes = _timeline_alignment(
+            team, received_players, received_picks, timeline
+        )
+        roster_impact = compute_roster_impact(
+            db, team.id, [p.id for p in given_players], received_players, league_avg_aav
+        )
+        roster_impact_out = [
+            {"position": r.position, "before": r.before, "after": r.after, "change": r.change}
+            for r in roster_impact
+            if r.change != 0
+        ]
 
         opportunity_cost_notes = [
             f"Giving up {pick_values[pk.id].pick_label} forgoes the option to retain in-house "
@@ -350,7 +426,11 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
             "risk_drivers": risk_drivers,
             "risk_mitigators": risk_mitigators,
             "timeline_alignment": round(timeline_alignment, 1),
+            "competitive_window": timeline.classification,
             "opportunity_cost_notes": opportunity_cost_notes,
+            "contract_impact": contract_impact,
+            "roster_impact": roster_impact_out,
+            "team_fit_explanations": fit_notes,
             "assessment": assessment,
             "positive_drivers": positive_drivers or ["No strong positive drivers identified."],
             "negative_drivers": negative_drivers or ["No strong negative drivers identified."],

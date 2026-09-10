@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.analytics.draft_pick_valuation import evaluate_draft_pick
 from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
+from app.api.team import _build_draft_capital
 from app.config import settings
 from app.database.session import get_db
 from app.models.contract import Contract
@@ -17,8 +18,24 @@ from app.models.draft_pick import DraftPick
 from app.models.player import Player
 from app.models.player_statistic import PlayerStatistic
 from app.models.team import Team
+from app.schemas.team import DraftCapitalOut
 
 router = APIRouter(prefix="/api/analytics", tags=["dashboard"])
+
+
+@router.get("/draft-capital", response_model=list[DraftCapitalOut])
+def draft_capital_all_teams(db: Session = Depends(get_db)):
+    """Section 32 - Draft Capital Dashboard, all teams at once (avoids
+    32 sequential requests from the frontend comparison view)."""
+    teams = db.query(Team).order_by(Team.name).all()
+    all_picks = db.query(DraftPick).all()
+    picks_by_team: dict[int, list[DraftPick]] = {}
+    for pick in all_picks:
+        picks_by_team.setdefault(pick.current_team_id, []).append(pick)
+
+    results = [_build_draft_capital(team, picks_by_team.get(team.id, [])) for team in teams]
+    results.sort(key=lambda r: r["estimated_total_value"], reverse=True)
+    return results
 
 
 @router.get("/dashboard")
