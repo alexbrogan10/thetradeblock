@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", protected_namespaces=())
 
     database_url: str = (
         "postgresql+psycopg2://tradeblock:tradeblock@localhost:5432/tradeblock"
@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     demo_mode: bool = True
     player_valuation_model_version: str = "player-valuation-v1.0"
     draft_pick_model_version: str = "draft-pick-traditional-v1.0"
+
+    # Where trained ML artifacts (Section 38/39) live. Relative default
+    # assumes the backend runs from backend/ with the repo checked out
+    # normally ("../models" -> <repo root>/models). Docker Compose
+    # overrides this to /models with a matching volume mount, since the
+    # backend container's build context is backend/ alone.
+    model_dir: str = "../models"
 
     # Player Value Score component weights (Section 10). These are the
     # starting assumptions called out in the product spec and are

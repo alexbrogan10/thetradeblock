@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api import dashboard, draft_picks, finder, historical, players, scenarios, team, teams, trades
+from app.api import dashboard, draft_picks, finder, historical, ml, players, scenarios, team, teams, trades
 
 api_router = APIRouter()
 api_router.include_router(teams.router)
@@ -12,3 +12,4 @@ api_router.include_router(team.router)
 api_router.include_router(scenarios.router)
 api_router.include_router(finder.router)
 api_router.include_router(historical.router)
+api_router.include_router(ml.router)

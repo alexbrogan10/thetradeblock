@@ -3,6 +3,8 @@ import type {
   DashboardOverview,
   DraftCapital,
   DraftPick,
+  MLProjection,
+  ModelVersion,
   Player,
   PlayerDetail,
   ScenarioComparisonRow,
@@ -107,6 +109,12 @@ export const api = {
   },
   getSimilarPlayers: (playerId: number, topN = 5) =>
     request<SimilarPlayer[]>(`/api/players/${playerId}/similar?top_n=${topN}`),
+  getMLProjection: (playerId: number) => request<MLProjection>(`/api/players/${playerId}/projection`),
+  getModelVersions: () => request<ModelVersion[]>("/api/ml/model-versions"),
+  getTradeMatches: (teamId: number) =>
+    request<{ team: Team; matches: { position: string; priority: string; need_score: number; targets: TradeTarget[] }[] }>(
+      `/api/team/${teamId}/trade-matches`
+    ),
 
   findTradeTargets: (payload: {
     team_id: number;

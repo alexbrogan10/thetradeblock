@@ -10,10 +10,12 @@ from app.analytics.draft_pick_valuation import evaluate_draft_pick
 from app.analytics.player_valuation import compute_position_average_aav
 from app.analytics.roster_impact import compute_roster_impact
 from app.analytics.team_needs import evaluate_team_needs
+from app.analytics.trade_finder import find_trade_targets
 from app.database.session import get_db
 from app.models.draft_pick import DraftPick
 from app.models.player import Player
 from app.models.team import Team
+from app.schemas.finder import TradeTargetOut
 from app.schemas.team import (
     DraftCapitalOut,
     DraftCapitalYearOut,
@@ -78,6 +80,33 @@ def get_team_draft_capital(team_id: int, db: Session = Depends(get_db)):
     team = _get_team_or_404(db, team_id)
     picks = db.query(DraftPick).filter(DraftPick.current_team_id == team_id).all()
     return _build_draft_capital(team, picks)
+
+
+@router.get("/{team_id}/trade-matches")
+def get_trade_matches(team_id: int, db: Session = Depends(get_db)):
+    """Section 38 - Trade Matching: automatically surfaces analytical
+    fits for whichever positions the Team Needs Engine currently grades
+    Critical or Major Need, reusing the same Trade Finder used when a
+    user manually searches by position (Section 23) -- so this is never
+    a second, independently-drifting notion of "fit.\""""
+    team = _get_team_or_404(db, team_id)
+    needs = evaluate_team_needs(db, team_id)
+    priority_needs = [n for n in needs if n.priority in ("Critical Need", "Major Need")]
+
+    matches = []
+    for need in priority_needs:
+        targets = find_trade_targets(db, team_id=team_id, position=need.position, limit=3)
+        if targets:
+            matches.append(
+                {
+                    "position": need.position,
+                    "priority": need.priority,
+                    "need_score": need.need_score,
+                    "targets": [TradeTargetOut(**t.__dict__).model_dump() for t in targets],
+                }
+            )
+
+    return {"team": team, "matches": matches}
 
 
 @router.get("/{team_id}/roster-impact", response_model=RosterImpactOut)

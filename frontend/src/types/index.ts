@@ -270,6 +270,26 @@ export interface SimilarPlayer {
   explanation: string;
 }
 
+export interface ModelVersion {
+  id: number;
+  model_name: string;
+  version: string;
+  training_date: string;
+  features: string[];
+  parameters: Record<string, unknown>;
+  evaluation_metrics: Record<string, number>;
+  dataset_version: string;
+  limitations: string[];
+}
+
+export interface MLProjection {
+  available: boolean;
+  predicted_performance_score?: number;
+  top_features?: { feature: string; importance: number }[];
+  model_version?: string;
+  note: string;
+}
+
 export interface DashboardOverview {
   demo_mode: boolean;
   player_valuation_model_version: string;

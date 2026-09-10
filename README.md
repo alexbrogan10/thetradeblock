@@ -158,6 +158,7 @@ proprietary NFL data, or an actual front-office system.
 cp .env.example .env
 docker compose up -d --build         # starts db + backend + frontend
 docker compose run --rm seed         # generates + loads demo data (first run)
+docker compose run --rm train        # trains the ML projection model (optional; see Phase 5)
 ```
 
 - API: http://localhost:8000 (OpenAPI docs at `/docs`)
@@ -165,6 +166,9 @@ docker compose run --rm seed         # generates + loads demo data (first run)
 
 To regenerate demo data with different values, run
 `python scripts/generate_demo_data.py` before `docker compose run --rm seed`.
+A pre-trained model is committed at
+`models/player_performance_projection_v1.joblib`, so `docker compose run
+--rm train` is only needed after re-seeding with different data.
 
 ### Option B — Run backend/frontend directly
 
@@ -176,6 +180,7 @@ pip install -r requirements.txt
 export DATABASE_URL=postgresql+psycopg2://tradeblock:tradeblock@localhost:5432/tradeblock
 python ../scripts/generate_demo_data.py   # from repo root, or adjust path
 python ../scripts/seed_demo_data.py
+python ../scripts/train_performance_projection.py   # optional: trains the ML projection model
 uvicorn app.main:app --reload
 
 # Frontend (separate terminal)
@@ -193,11 +198,26 @@ running. Key endpoints:
 GET  /api/teams
 GET  /api/teams/{id}
 GET  /api/players?team_id=&position=
-GET  /api/players/{id}            # includes valuation + explanation
+GET  /api/players/{id}                 # includes valuation + explanation
+GET  /api/players/{id}/similar         # Player Similarity (KNN)
+GET  /api/players/{id}/projection      # ML Performance Projection
 GET  /api/draft-picks?team_id=&year=
 GET  /api/draft-picks/{id}/valuation   # Traditional/Historical/Expected breakdown
 POST /api/trades/analyze
-GET  /api/analytics/dashboard     # Front Office Dashboard data
+POST /api/trades/sensitivity           # Sensitivity Analysis + What Would Change This?
+POST /api/trades/finder                # Trade Finder
+POST /api/trades/scenarios             # Save a Trade Simulator scenario
+GET  /api/trades/scenarios             # List saved scenarios
+POST /api/trades/scenarios/compare     # Scenario Comparison
+GET  /api/team/{id}/needs              # Team Needs Engine
+GET  /api/team/{id}/timeline           # Competitive Window
+GET  /api/team/{id}/draft-capital      # Draft Capital Dashboard
+GET  /api/team/{id}/roster-impact      # Before/after positional strength
+GET  /api/team/{id}/trade-matches      # Trade Matching (auto Trade Finder per need)
+GET  /api/historical-trades/comparable # Historical Trade Database search
+GET  /api/analytics/dashboard          # Front Office Dashboard data
+GET  /api/analytics/value-discrepancies
+GET  /api/ml/model-versions            # Model Versioning
 ```
 
 ## Testing
@@ -244,8 +264,14 @@ critical path yet.
   Database with comparable-trade search
   (`/historical-trades`, `GET /api/historical-trades/comparable`), and
   Player Similarity via scikit-learn KNN (`GET /api/players/{id}/similar`).
-- **Phase 5 — Machine Learning**: performance projection, value models,
-  trade matching, model versioning, feature importance.
+- ✅ **Phase 5 — Machine Learning**: leakage-safe Player Performance
+  Projection (scikit-learn RandomForestRegressor,
+  `scripts/train_performance_projection.py`,
+  `GET /api/players/{id}/projection` with feature importance), Model
+  Versioning for every model — heuristic and ML — with evaluation
+  metrics and documented limitations (`/model-versions`), and Trade
+  Matching (`GET /api/team/{id}/trade-matches`) that automatically runs
+  the Trade Finder against every Critical/Major-Need position.
 - **Phase 6 — Production Polish**: exportable reports (PDF/CSV/JSON),
   advanced filtering, performance optimization, deployment configs for
   AWS/Azure/Render/Railway.

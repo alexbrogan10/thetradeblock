@@ -9,6 +9,7 @@ import { ScenariosPage } from "./pages/Scenarios";
 import { TradeFinderPage } from "./pages/TradeFinder";
 import { ValueDiscrepanciesPage } from "./pages/ValueDiscrepancies";
 import { HistoricalTradesPage } from "./pages/HistoricalTrades";
+import { ModelVersionsPage } from "./pages/ModelVersions";
 import { api } from "./services/api";
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/trade-finder" element={<TradeFinderPage />} />
             <Route path="/value-discrepancies" element={<ValueDiscrepanciesPage />} />
             <Route path="/historical-trades" element={<HistoricalTradesPage />} />
+            <Route path="/model-versions" element={<ModelVersionsPage />} />
           </Routes>
         </main>
       </div>

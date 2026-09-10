@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "../components/common/Card";
 import { ScoreBadge } from "../components/common/ScoreBadge";
 import { api } from "../services/api";
-import type { ComparableTrade, Player, SimilarPlayer, Team } from "../types";
+import type { ComparableTrade, MLProjection, Player, SimilarPlayer, Team } from "../types";
 
 const POSITIONS = ["", "QB", "RB", "WR", "TE", "OT", "IOL", "EDGE", "DT", "LB", "CB", "S", "K", "P", "LS"];
 
@@ -110,6 +110,7 @@ function PlayerSimilarityLookup() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerId, setPlayerId] = useState<number | null>(null);
   const [results, setResults] = useState<SimilarPlayer[] | null>(null);
+  const [projection, setProjection] = useState<MLProjection | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,14 +122,19 @@ function PlayerSimilarityLookup() {
     else setPlayers([]);
     setPlayerId(null);
     setResults(null);
+    setProjection(null);
   }, [teamId]);
 
   async function lookup() {
     if (!playerId) return;
     setError(null);
     try {
-      const r = await api.getSimilarPlayers(playerId);
-      setResults(r);
+      const [similar, proj] = await Promise.all([
+        api.getSimilarPlayers(playerId),
+        api.getMLProjection(playerId),
+      ]);
+      setResults(similar);
+      setProjection(proj);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -183,6 +189,30 @@ function PlayerSimilarityLookup() {
       </div>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
+
+      {projection && (
+        <div className="mb-4 rounded border border-slate-200 bg-slate-50 p-3">
+          <h4 className="mb-1 text-xs font-semibold uppercase text-slate-400">
+            ML Performance Projection (Next Season)
+          </h4>
+          {projection.available ? (
+            <>
+              <div className="text-sm">
+                Predicted performance score:{" "}
+                <span className="font-semibold text-slate-800">{projection.predicted_performance_score}</span>
+                <span className="text-xs text-slate-400"> ({projection.model_version})</span>
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                Top drivers:{" "}
+                {projection.top_features?.map((f) => `${f.feature} (${f.importance})`).join(", ")}
+              </div>
+              <p className="mt-1 text-xs italic text-slate-400">{projection.note}</p>
+            </>
+          ) : (
+            <p className="text-xs text-slate-400">{projection.note}</p>
+          )}
+        </div>
+      )}
 
       {results && (
         <div className="divide-y divide-slate-100">

@@ -79,13 +79,14 @@ LAST_NAMES = [
 POSITION_TEMPLATE = [
     ("QB", 1), ("RB", 2), ("WR", 3), ("TE", 1),
     ("OT", 2), ("IOL", 1), ("EDGE", 2), ("DT", 1),
-    ("LB", 2), ("CB", 2), ("S", 1), ("K", 1),
+    ("LB", 2), ("CB", 2), ("S", 1), ("K", 1), ("P", 1), ("LS", 1),
 ]
 
 AGE_RANGE = {
     "QB": (23, 38), "RB": (21, 31), "WR": (21, 33), "TE": (22, 34),
     "OT": (22, 36), "IOL": (22, 36), "EDGE": (21, 34), "DT": (22, 35),
     "LB": (21, 34), "CB": (21, 33), "S": (21, 34), "K": (23, 40),
+    "P": (23, 39), "LS": (23, 38),
 }
 
 used_names = set()
@@ -206,6 +207,15 @@ def gen_stats(position: str, talent: float, season_factor: float) -> dict:
             "long": round(45 + 15 * t),
             "fg_made": round(18 + 14 * t),
         }
+    if position == "P":
+        return {
+            "games": random.randint(14, 17),
+            "games_started": 0,
+            "avg_punt_yards": round(42.0 + 8.0 * t, 1),
+            "punts_inside_20_pct": round(0.30 + 0.30 * t, 2),
+        }
+    # LS (long snapper): no meaningful public production stats exist for
+    # this position (Section 11) -- availability is the only signal.
     return {"games": random.randint(10, 17), "games_started": 0}
 
 
@@ -213,7 +223,7 @@ def gen_contract(position: str, talent: float, age: int):
     position_base_aav = {
         "QB": 28.0, "EDGE": 18.0, "WR": 16.0, "CB": 15.0, "OT": 14.0,
         "DT": 12.0, "S": 10.5, "IOL": 9.5, "LB": 9.0, "TE": 8.5, "RB": 6.5,
-        "K": 3.5,
+        "K": 3.5, "P": 1.5, "LS": 1.2,
     }
     base = position_base_aav.get(position, 6.0)
     aav = round(base * (0.35 + 1.15 * talent) * random.uniform(0.85, 1.15), 2)

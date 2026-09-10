@@ -35,10 +35,13 @@ import app.models as _all_models  # noqa: E402,F401  (registers every model on B
 from app.models.contract import Contract  # noqa: E402
 from app.models.draft_pick import DraftPick  # noqa: E402
 from app.models.historical_trade import HistoricalTrade, TradeAsset  # noqa: E402
+from app.models.model_version import ModelVersion  # noqa: E402
 from app.models.player import Player  # noqa: E402
 from app.models.player_statistic import PlayerStatistic  # noqa: E402
 from app.models.team import Team  # noqa: E402
 from app.models.valuation import PlayerValuation  # noqa: E402
+from app.analytics.position_tables import PRODUCTION_WEIGHTS  # noqa: E402
+from app.config import settings  # noqa: E402
 
 RAW_DIR = REPO_ROOT / "data" / "raw"
 
@@ -229,6 +232,48 @@ def main():
                     confidence=result.confidence,
                 )
             )
+        db.commit()
+
+        print("Registering heuristic model versions (Section 39)...")
+        db.add(
+            ModelVersion(
+                model_name="player-valuation",
+                version="v1.0",
+                features=list(PRODUCTION_WEIGHTS.keys()),
+                parameters={
+                    "weight_recent_performance": settings.weight_recent_performance,
+                    "weight_projected_performance": settings.weight_projected_performance,
+                    "weight_age": settings.weight_age,
+                    "weight_position_value": settings.weight_position_value,
+                    "weight_contract_efficiency": settings.weight_contract_efficiency,
+                    "weight_availability": settings.weight_availability,
+                    "weight_positional_scarcity": settings.weight_positional_scarcity,
+                    "weight_trajectory": settings.weight_trajectory,
+                },
+                evaluation_metrics={},
+                dataset_version="demo-synthetic-v1",
+                limitations=[
+                    "A transparent weighted-formula model, not fit against real outcome "
+                    "data -- there are no accuracy metrics to report (see "
+                    "docs/valuation_methodology.md).",
+                ],
+            )
+        )
+        db.add(
+            ModelVersion(
+                model_name="draft-pick-traditional",
+                version="v1.0",
+                features=["round", "overall_pick", "year"],
+                parameters={"base": 3000.0, "decay": 0.075},
+                evaluation_metrics={},
+                dataset_version="demo-synthetic-v1",
+                limitations=[
+                    "An original approximation of public draft-chart shapes, not a "
+                    "reproduction of any real team's proprietary chart (see "
+                    "docs/draft_capital_methodology.md).",
+                ],
+            )
+        )
         db.commit()
 
         print("Done. Demo data loaded successfully.")

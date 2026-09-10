@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/trade-finder", label: "Trade Finder" },
   { to: "/value-discrepancies", label: "Value Discrepancies" },
   { to: "/historical-trades", label: "Historical Trades" },
+  { to: "/model-versions", label: "Model Versions" },
 ];
 
 export function Sidebar() {

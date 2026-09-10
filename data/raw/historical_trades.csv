@@ -1,56 +1,56 @@
 id,date,team_a_id,team_b_id,notes
-1,2022-02-11,2,12,Change-of-scenery move; production held roughly steady.
-2,2025-09-04,7,28,Both sides described the move as addressing a positional need.
-3,2025-04-20,16,6,Both sides described the move as addressing a positional need.
-4,2021-02-04,26,19,Modest role for the acquired player; depth-for-depth swap.
-5,2021-11-27,20,32,Contending team paid a premium for a proven starter.
-6,2021-02-05,3,29,Player's role diminished after the move.
-7,2022-03-15,8,14,Contending team paid a premium for a proven starter.
-8,2022-01-04,22,11,Rebuilding team prioritized draft capital over immediate production.
-9,2021-01-23,4,18,Rebuilding team prioritized draft capital over immediate production.
-10,2025-07-11,3,18,Player's role diminished after the move.
-11,2021-02-16,3,1,Modest role for the acquired player; depth-for-depth swap.
-12,2021-12-08,7,32,Modest role for the acquired player; depth-for-depth swap.
-13,2024-04-15,14,8,Contending team paid a premium for a proven starter.
-14,2024-08-01,3,5,Player's role diminished after the move.
-15,2022-08-03,29,23,Player's role diminished after the move.
-16,2021-04-03,26,31,Both sides described the move as addressing a positional need.
-17,2023-02-16,17,32,Contending team paid a premium for a proven starter.
-18,2023-06-11,28,13,Contending team paid a premium for a proven starter.
-19,2025-03-07,10,5,Acquired player became an immediate starter for the new team.
-20,2025-05-06,20,6,Modest role for the acquired player; depth-for-depth swap.
-21,2024-09-06,22,11,Rebuilding team prioritized draft capital over immediate production.
-22,2021-12-15,12,30,Both sides described the move as addressing a positional need.
-23,2023-04-17,9,24,Player's role diminished after the move.
-24,2025-08-07,28,32,Rebuilding team prioritized draft capital over immediate production.
-25,2025-07-26,15,24,Modest role for the acquired player; depth-for-depth swap.
-26,2024-09-14,29,21,Acquired player became an immediate starter for the new team.
-27,2021-08-16,16,5,Rebuilding team prioritized draft capital over immediate production.
-28,2022-12-22,8,32,Modest role for the acquired player; depth-for-depth swap.
-29,2022-02-02,14,9,Both sides described the move as addressing a positional need.
-30,2023-03-11,21,14,Player's role diminished after the move.
-31,2022-10-26,3,6,Modest role for the acquired player; depth-for-depth swap.
-32,2024-12-23,17,12,Contending team paid a premium for a proven starter.
-33,2022-06-01,31,9,Both sides described the move as addressing a positional need.
-34,2022-03-27,26,18,Change-of-scenery move; production held roughly steady.
-35,2025-11-10,14,11,Change-of-scenery move; production held roughly steady.
-36,2023-04-02,30,27,Acquired player became an immediate starter for the new team.
-37,2023-04-10,30,2,Modest role for the acquired player; depth-for-depth swap.
-38,2024-11-27,29,32,Acquired player became an immediate starter for the new team.
-39,2025-11-03,10,25,Change-of-scenery move; production held roughly steady.
-40,2024-05-04,9,3,Modest role for the acquired player; depth-for-depth swap.
-41,2021-11-17,7,21,Contending team paid a premium for a proven starter.
-42,2021-09-06,2,14,Modest role for the acquired player; depth-for-depth swap.
-43,2022-11-18,4,32,Both sides described the move as addressing a positional need.
-44,2021-10-24,25,10,Modest role for the acquired player; depth-for-depth swap.
-45,2023-04-23,31,2,Modest role for the acquired player; depth-for-depth swap.
-46,2023-08-25,10,8,Acquired player became an immediate starter for the new team.
-47,2025-06-15,6,1,Change-of-scenery move; production held roughly steady.
-48,2022-11-24,9,27,Change-of-scenery move; production held roughly steady.
-49,2023-11-06,28,32,Acquired player became an immediate starter for the new team.
-50,2025-07-23,12,14,Rebuilding team prioritized draft capital over immediate production.
-51,2023-06-04,11,1,Modest role for the acquired player; depth-for-depth swap.
-52,2024-06-13,9,20,Both sides described the move as addressing a positional need.
-53,2024-05-26,15,1,Change-of-scenery move; production held roughly steady.
-54,2021-07-21,15,6,Modest role for the acquired player; depth-for-depth swap.
-55,2024-07-01,7,24,Both sides described the move as addressing a positional need.
+1,2023-05-17,23,8,Player's role diminished after the move.
+2,2021-06-25,11,7,Rebuilding team prioritized draft capital over immediate production.
+3,2024-07-11,18,31,Change-of-scenery move; production held roughly steady.
+4,2023-02-23,7,24,Change-of-scenery move; production held roughly steady.
+5,2021-11-16,25,9,Both sides described the move as addressing a positional need.
+6,2021-03-22,28,27,Change-of-scenery move; production held roughly steady.
+7,2025-10-06,31,12,Rebuilding team prioritized draft capital over immediate production.
+8,2024-01-12,10,1,Modest role for the acquired player; depth-for-depth swap.
+9,2024-06-14,21,32,Rebuilding team prioritized draft capital over immediate production.
+10,2023-02-09,31,10,Acquired player became an immediate starter for the new team.
+11,2024-05-16,11,10,Modest role for the acquired player; depth-for-depth swap.
+12,2023-05-23,26,1,Player's role diminished after the move.
+13,2021-08-12,13,20,Modest role for the acquired player; depth-for-depth swap.
+14,2024-10-23,31,6,Player's role diminished after the move.
+15,2024-03-22,9,5,Contending team paid a premium for a proven starter.
+16,2021-04-12,10,4,Acquired player became an immediate starter for the new team.
+17,2025-02-28,18,7,Modest role for the acquired player; depth-for-depth swap.
+18,2022-06-25,18,3,Modest role for the acquired player; depth-for-depth swap.
+19,2023-05-01,21,29,Modest role for the acquired player; depth-for-depth swap.
+20,2022-09-27,1,22,Player's role diminished after the move.
+21,2024-10-20,27,7,Contending team paid a premium for a proven starter.
+22,2022-12-09,29,12,Change-of-scenery move; production held roughly steady.
+23,2024-05-11,19,26,Rebuilding team prioritized draft capital over immediate production.
+24,2023-01-17,4,26,Contending team paid a premium for a proven starter.
+25,2021-02-18,14,24,Acquired player became an immediate starter for the new team.
+26,2023-07-27,6,17,Player's role diminished after the move.
+27,2024-11-19,25,24,Contending team paid a premium for a proven starter.
+28,2023-11-09,17,3,Contending team paid a premium for a proven starter.
+29,2025-10-13,30,6,Player's role diminished after the move.
+30,2022-12-12,17,32,Both sides described the move as addressing a positional need.
+31,2024-06-17,6,31,Rebuilding team prioritized draft capital over immediate production.
+32,2021-10-12,29,14,Modest role for the acquired player; depth-for-depth swap.
+33,2021-09-24,23,14,Both sides described the move as addressing a positional need.
+34,2025-01-22,24,10,Change-of-scenery move; production held roughly steady.
+35,2025-04-27,6,25,Change-of-scenery move; production held roughly steady.
+36,2022-11-24,5,31,Contending team paid a premium for a proven starter.
+37,2023-06-26,14,25,Modest role for the acquired player; depth-for-depth swap.
+38,2023-07-18,19,11,Change-of-scenery move; production held roughly steady.
+39,2021-02-06,30,4,Acquired player became an immediate starter for the new team.
+40,2022-05-22,31,2,Contending team paid a premium for a proven starter.
+41,2025-05-05,3,31,Rebuilding team prioritized draft capital over immediate production.
+42,2021-04-20,12,10,Change-of-scenery move; production held roughly steady.
+43,2024-10-01,30,23,Change-of-scenery move; production held roughly steady.
+44,2022-11-14,15,10,Acquired player became an immediate starter for the new team.
+45,2025-01-18,2,15,Acquired player became an immediate starter for the new team.
+46,2024-05-12,10,15,Both sides described the move as addressing a positional need.
+47,2021-01-28,2,14,Contending team paid a premium for a proven starter.
+48,2022-09-18,6,29,Player's role diminished after the move.
+49,2023-07-22,25,27,Rebuilding team prioritized draft capital over immediate production.
+50,2023-05-25,32,15,Both sides described the move as addressing a positional need.
+51,2022-05-07,28,3,Acquired player became an immediate starter for the new team.
+52,2021-12-27,9,16,Player's role diminished after the move.
+53,2025-10-28,4,15,Change-of-scenery move; production held roughly steady.
+54,2025-10-24,22,7,Contending team paid a premium for a proven starter.
+55,2023-05-07,8,4,Change-of-scenery move; production held roughly steady.
