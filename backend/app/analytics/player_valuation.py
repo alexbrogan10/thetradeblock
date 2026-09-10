@@ -149,7 +149,13 @@ def evaluate_player(
     seasons: list[PlayerStatistic],
     contract: Contract | None,
     league_avg_aav: dict[str, float],
+    performance_multiplier: float = 1.0,
 ) -> ValuationResult:
+    """performance_multiplier scales the performance/projection components
+    before they flow into the rest of the score. It exists solely to
+    support Sensitivity Analysis (Section 28) -- e.g. "if this player
+    performs at 110% of projection" -- and defaults to 1.0 (no effect) for
+    every ordinary valuation."""
     position = player.position
     group = POSITION_GROUP.get(position, "WR")
 
@@ -157,6 +163,7 @@ def evaluate_player(
     performance_score, has_performance_signal = _production_score(
         position, (latest_season.stats if latest_season else {}) or {}
     )
+    performance_score = _clip(performance_score * performance_multiplier)
 
     age_score = _age_score(position, player.age)
     next_year_age_score = _age_score(position, player.age + 1)

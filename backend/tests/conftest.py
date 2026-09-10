@@ -17,6 +17,7 @@ from app.models.draft_pick import DraftPick  # noqa: E402
 from app.models.player import Player  # noqa: E402
 from app.models.player_statistic import PlayerStatistic  # noqa: E402
 from app.models.team import Team  # noqa: E402
+import app.models as _all_models  # noqa: E402,F401  (registers every model on Base.metadata)
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 engine = create_engine(TEST_DATABASE_URL)
@@ -36,14 +37,10 @@ def clean_between_tests():
     yield
     session = TestSessionLocal()
     try:
-        from app.models.valuation import PlayerValuation
-
-        session.query(PlayerValuation).delete()
-        session.query(Contract).delete()
-        session.query(PlayerStatistic).delete()
-        session.query(DraftPick).delete()
-        session.query(Player).delete()
-        session.query(Team).delete()
+        # Delete in reverse dependency order so FK constraints never block
+        # cleanup, no matter which models a given test happened to touch.
+        for table in reversed(Base.metadata.sorted_tables):
+            session.execute(table.delete())
         session.commit()
     finally:
         session.close()

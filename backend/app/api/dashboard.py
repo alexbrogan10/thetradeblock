@@ -5,9 +5,10 @@ nothing is hard-coded, and no output implies a trade "will happen."
 """
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.analytics.discrepancy import find_value_discrepancies
 from app.analytics.draft_pick_valuation import evaluate_draft_pick
 from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
 from app.api.team import _build_draft_capital
@@ -21,6 +22,19 @@ from app.models.team import Team
 from app.schemas.team import DraftCapitalOut
 
 router = APIRouter(prefix="/api/analytics", tags=["dashboard"])
+
+
+@router.get("/value-discrepancies")
+def value_discrepancies(
+    min_discrepancy: float = Query(12.0, ge=0),
+    position: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Section 16 - Trade Value Discrepancy Finder, as a first-class,
+    filterable endpoint (the Front Office Dashboard shows a top-10 preview
+    of the same underlying computation)."""
+    results = find_value_discrepancies(db, min_abs_discrepancy=min_discrepancy, position=position)
+    return [r.__dict__ for r in results]
 
 
 @router.get("/draft-capital", response_model=list[DraftCapitalOut])
@@ -75,25 +89,7 @@ def dashboard_overview(db: Session = Depends(get_db)):
         reverse=True,
     )
 
-    discrepancies = []
-    for p, v in valuations:
-        contract = db.query(Contract).filter(Contract.player_id == p.id).first()
-        if contract and contract.annual_value > 0:
-            expected_score_for_pay = min(100.0, (contract.annual_value / max(league_avg_aav.get(p.position, 8.0), 0.1)) * 50)
-            discrepancy = v.valuation - expected_score_for_pay
-            if abs(discrepancy) >= 12:
-                discrepancies.append(
-                    {
-                        "player_id": p.id,
-                        "name": p.name,
-                        "position": p.position,
-                        "team": p.team.abbreviation if p.team else None,
-                        "analytical_value": v.valuation,
-                        "expected_value_for_cost": round(expected_score_for_pay, 1),
-                        "potential_discrepancy": round(discrepancy, 1),
-                    }
-                )
-    discrepancies.sort(key=lambda d: abs(d["potential_discrepancy"]), reverse=True)
+    discrepancies = [d.__dict__ for d in find_value_discrepancies(db, min_abs_discrepancy=12.0, limit=10)]
 
     teams = db.query(Team).all()
     draft_capital_by_team = []

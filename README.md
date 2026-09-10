@@ -233,10 +233,13 @@ critical path yet.
   Draft Capital Dashboard page (`GET /api/analytics/draft-capital`),
   and detailed Contract Impact (this-year + ~3yr outlook) embedded in
   every trade analysis.
-- **Phase 3 — Advanced Trade Analytics**: Trade Simulator with saved
-  scenarios, Scenario Comparison, full Opportunity Cost, Trade Value
-  Discrepancy Finder as a first-class page, Sensitivity Analysis,
-  "What Would Change Our Mind?" as a dedicated view.
+- ✅ **Phase 3 — Advanced Trade Analytics**: Trade Simulator with saved
+  scenarios (`/scenarios`, frozen at save time per Section 40), Scenario
+  Comparison (`POST /api/trades/scenarios/compare`), Trade Value
+  Discrepancy Finder as a first-class page (`/value-discrepancies`),
+  Trade Finder (`/trade-finder`) with acquisition-cost estimation,
+  Sensitivity Analysis + "What Would Change This?" embedded in the
+  Trade Center.
 - **Phase 4 — Historical Analytics**: Historical Trade Database,
   comparable-trade search, Player Similarity (KNN).
 - **Phase 5 — Machine Learning**: performance projection, value models,

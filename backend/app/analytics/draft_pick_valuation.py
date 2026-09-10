@@ -42,8 +42,12 @@ def _effective_pick_number(round_: int, overall_pick: int | None) -> int:
     return ROUND_MIDPOINT_SLOT.get(round_, (round_ - 1) * 32 + 16)
 
 
+TRADITIONAL_BASE = 3000.0
+TRADITIONAL_DECAY = 0.075
+
+
 def _traditional(pick: int) -> float:
-    return 3000 / (1 + 0.075 * (pick - 1))
+    return TRADITIONAL_BASE / (1 + TRADITIONAL_DECAY * (pick - 1))
 
 
 def _historical(pick: int) -> float:

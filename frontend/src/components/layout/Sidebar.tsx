@@ -4,6 +4,9 @@ const NAV_ITEMS = [
   { to: "/", label: "Front Office Dashboard" },
   { to: "/trade-center", label: "Trade Center" },
   { to: "/draft-capital", label: "Draft Capital" },
+  { to: "/scenarios", label: "Scenarios" },
+  { to: "/trade-finder", label: "Trade Finder" },
+  { to: "/value-discrepancies", label: "Value Discrepancies" },
 ];
 
 export function Sidebar() {

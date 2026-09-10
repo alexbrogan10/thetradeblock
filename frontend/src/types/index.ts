@@ -171,6 +171,79 @@ export interface TradeAnalysisResult {
   disclaimer: string;
 }
 
+export interface ScenarioSummary {
+  id: number;
+  name: string;
+  team_a_name: string;
+  team_b_name: string;
+  team_a_assessment: string;
+  team_b_assessment: string;
+  confidence: number;
+  model_version: string;
+  created_at: string;
+}
+
+export interface ScenarioDetail extends TradeAnalysisResult {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export interface ScenarioComparisonRow {
+  scenario_id: number;
+  name: string;
+  applicable: boolean;
+  note?: string;
+  assessment?: string;
+  asset_value_delta?: number;
+  draft_capital_delta?: number;
+  financial_impact?: number;
+  roster_fit_score?: number;
+  risk_level?: string;
+  timeline_alignment?: number;
+  confidence?: number;
+}
+
+export interface SensitivityPoint {
+  label: string;
+  assessment: string;
+  asset_value_delta: number;
+  confidence: number;
+}
+
+export interface SensitivityResult {
+  performance_sensitivity: SensitivityPoint[];
+  draft_model_sensitivity: SensitivityPoint[];
+  what_would_change_this: string[];
+}
+
+export interface ValueDiscrepancy {
+  player_id: number;
+  name: string;
+  position: string;
+  team: string | null;
+  analytical_value: number;
+  expected_value_for_cost: number;
+  potential_discrepancy: number;
+  drivers: string[];
+}
+
+export interface TradeTarget {
+  player_id: number;
+  name: string;
+  position: string;
+  team: string | null;
+  age: number;
+  fit_score: number;
+  fit_explanation: string;
+  analytical_value: number;
+  estimated_cost_low: string;
+  estimated_cost_high: string;
+  cost_confidence: string;
+  contract_fit_note: string;
+  risk_level: string;
+}
+
 export interface DashboardOverview {
   demo_mode: boolean;
   player_valuation_model_version: string;

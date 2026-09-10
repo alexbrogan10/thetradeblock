@@ -4,10 +4,16 @@ import type {
   DraftPick,
   Player,
   PlayerDetail,
+  ScenarioComparisonRow,
+  ScenarioDetail,
+  ScenarioSummary,
+  SensitivityResult,
   Team,
   TeamNeeds,
   Timeline,
   TradeAnalysisResult,
+  TradeTarget,
+  ValueDiscrepancy,
 } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -23,6 +29,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   return res.json();
 }
+
+type TradeSidePayload = { team_id: number; player_ids: number[]; draft_pick_ids: number[] };
 
 export const api = {
   getTeams: () => request<Team[]>("/api/teams"),
@@ -42,10 +50,7 @@ export const api = {
     const query = qs.toString();
     return request<DraftPick[]>(`/api/draft-picks${query ? `?${query}` : ""}`);
   },
-  analyzeTrade: (payload: {
-    team_a: { team_id: number; player_ids: number[]; draft_pick_ids: number[] };
-    team_b: { team_id: number; player_ids: number[]; draft_pick_ids: number[] };
-  }) =>
+  analyzeTrade: (payload: { team_a: TradeSidePayload; team_b: TradeSidePayload }) =>
     request<TradeAnalysisResult>("/api/trades/analyze", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -55,4 +60,49 @@ export const api = {
   getTeamTimeline: (teamId: number) => request<Timeline>(`/api/team/${teamId}/timeline`),
   getTeamDraftCapital: (teamId: number) => request<DraftCapital>(`/api/team/${teamId}/draft-capital`),
   getAllTeamsDraftCapital: () => request<DraftCapital[]>("/api/analytics/draft-capital"),
+
+  saveScenario: (payload: { name: string; team_a: TradeSidePayload; team_b: TradeSidePayload }) =>
+    request<ScenarioSummary>("/api/trades/scenarios", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listScenarios: () => request<ScenarioSummary[]>("/api/trades/scenarios"),
+  getScenario: (id: number) => request<ScenarioDetail>(`/api/trades/scenarios/${id}`),
+  deleteScenario: (id: number) =>
+    request<{ status: string }>(`/api/trades/scenarios/${id}`, { method: "DELETE" }),
+  compareScenarios: (scenario_ids: number[], perspective_team_id: number) =>
+    request<ScenarioComparisonRow[]>("/api/trades/scenarios/compare", {
+      method: "POST",
+      body: JSON.stringify({ scenario_ids, perspective_team_id }),
+    }),
+
+  getSensitivity: (payload: {
+    team_a: TradeSidePayload;
+    team_b: TradeSidePayload;
+    perspective_team_id: number;
+  }) =>
+    request<SensitivityResult>("/api/trades/sensitivity", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  getValueDiscrepancies: (params: { min_discrepancy?: number; position?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.min_discrepancy !== undefined) qs.set("min_discrepancy", String(params.min_discrepancy));
+    if (params.position) qs.set("position", params.position);
+    const query = qs.toString();
+    return request<ValueDiscrepancy[]>(`/api/analytics/value-discrepancies${query ? `?${query}` : ""}`);
+  },
+
+  findTradeTargets: (payload: {
+    team_id: number;
+    position: string;
+    max_acquisition_cost?: number;
+    age_preference?: "young" | "prime" | "veteran";
+    risk_tolerance?: "Low" | "Moderate" | "High";
+  }) =>
+    request<TradeTarget[]>("/api/trades/finder", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

@@ -22,6 +22,7 @@ from app.analytics.player_valuation import (
 from app.analytics.team_fit import compute_team_fit
 from app.analytics.team_needs import evaluate_team_needs
 from app.analytics.roster_impact import compute_roster_impact
+from app.analytics.risk import assess_players_risk
 from app.config import settings
 from app.models.contract import Contract
 from app.models.draft_pick import DraftPick
@@ -63,14 +64,18 @@ def _load_side(db: Session, team_id: int, player_ids: list[int], pick_ids: list[
     return team, players, picks
 
 
-def _valuate_players(db: Session, players: list[Player], league_avg_aav: dict):
+def _valuate_players(
+    db: Session, players: list[Player], league_avg_aav: dict, performance_multiplier: float = 1.0
+):
     values = {}
     for player in players:
         seasons = (
             db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
         )
         contract = db.query(Contract).filter(Contract.player_id == player.id).first()
-        values[player.id] = evaluate_player(player, seasons, contract, league_avg_aav)
+        values[player.id] = evaluate_player(
+            player, seasons, contract, league_avg_aav, performance_multiplier=performance_multiplier
+        )
     return values
 
 
@@ -79,6 +84,16 @@ def _valuate_picks(picks: list[DraftPick]):
         pick.id: evaluate_draft_pick(pick.year, pick.round, pick.overall_pick)
         for pick in picks
     }
+
+
+def _pick_value(dpv, pick_model: str) -> float:
+    """Section 28 sensitivity support: pick "value" under a specific
+    single methodology instead of the averaged default."""
+    return {
+        "traditional": dpv.traditional_value,
+        "historical": dpv.historical_value,
+        "expected": dpv.expected_value,
+    }.get(pick_model, dpv.average_value)
 
 
 def _roster_fit(
@@ -103,46 +118,10 @@ def _roster_fit(
     return sum(fit_scores) / len(fit_scores), notes
 
 
-def _risk_assessment(received_players: list[Player], player_values: dict, contracts_by_player: dict):
+def _risk_assessment(received_players: list[Player], player_values: dict):
     if not received_players:
         return "Low", ["No players received in this trade."], ["Draft-pick-only trades carry no on-field player risk."]
-
-    age_risks, contract_risks, availability_risks, confidence_risks = [], [], [], []
-    for player in received_players:
-        val = player_values[player.id]
-        age_risks.append(100 - val.age_score)
-        contract_risks.append(100 - val.contract_score)
-        availability_risks.append(100 - val.availability_score)
-        confidence_risks.append(100 - val.confidence)
-
-    def _avg(xs):
-        return sum(xs) / len(xs)
-
-    components = {
-        "Age curve": _avg(age_risks),
-        "Contract commitment": _avg(contract_risks),
-        "Availability history": _avg(availability_risks),
-        "Valuation uncertainty": _avg(confidence_risks),
-    }
-    risk_score = sum(components.values()) / len(components)
-
-    ranked = sorted(components.items(), key=lambda kv: kv[1], reverse=True)
-    drivers = [f"{name}" for name, score in ranked if score >= 55][:3]
-    mitigators = [f"{name.replace('risk', 'profile')} is favorable" for name, score in ranked if score < 40][:3]
-
-    if risk_score < 35:
-        level = "Low"
-    elif risk_score < 65:
-        level = "Moderate"
-    else:
-        level = "High"
-
-    if not drivers:
-        drivers = ["No single risk factor stands out; overall risk is diffuse."]
-    if not mitigators:
-        mitigators = ["Limited mitigating factors identified from available data."]
-
-    return level, drivers, mitigators
+    return assess_players_risk([(p, player_values[p.id]) for p in received_players])
 
 
 def _timeline_alignment(
@@ -255,7 +234,16 @@ def _confidence_label(agreement: str) -> float:
     return {"High": 90.0, "Moderate": 65.0, "Low": 40.0}.get(agreement, 50.0)
 
 
-def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
+def analyze_trade(
+    db: Session,
+    team_a_input,
+    team_b_input,
+    performance_multiplier: float = 1.0,
+    pick_model: str = "average",
+) -> dict:
+    """performance_multiplier and pick_model exist to support Sensitivity
+    Analysis (Section 28) -- see app/analytics/sensitivity.py. Both
+    default to values that reproduce the ordinary trade analysis exactly."""
     if not any(
         [
             team_a_input.player_ids,
@@ -282,7 +270,9 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
 
     league_avg_aav = compute_position_average_aav(db)
     all_players = players_a + players_b
-    player_values = _valuate_players(db, all_players, league_avg_aav)
+    player_values = _valuate_players(
+        db, all_players, league_avg_aav, performance_multiplier=performance_multiplier
+    )
     pick_values = _valuate_picks(picks_a + picks_b)
 
     team_needs_by_team = {
@@ -309,7 +299,7 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
             for p in given_players
         ] + [
             {"asset_type": "draft_pick", "asset_id": pk.id, "label": pick_values[pk.id].pick_label,
-             "value": pick_values[pk.id].average_value}
+             "value": _pick_value(pick_values[pk.id], pick_model)}
             for pk in given_picks
         ]
         receives = [
@@ -318,14 +308,14 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
             for p in received_players
         ] + [
             {"asset_type": "draft_pick", "asset_id": pk.id, "label": pick_values[pk.id].pick_label,
-             "value": pick_values[pk.id].average_value}
+             "value": _pick_value(pick_values[pk.id], pick_model)}
             for pk in received_picks
         ]
 
         player_value_given = sum(player_values[p.id].valuation for p in given_players)
         player_value_received = sum(player_values[p.id].valuation for p in received_players)
-        draft_capital_given = sum(pick_values[pk.id].average_value for pk in given_picks)
-        draft_capital_received = sum(pick_values[pk.id].average_value for pk in received_picks)
+        draft_capital_given = sum(_pick_value(pick_values[pk.id], pick_model) for pk in given_picks)
+        draft_capital_received = sum(_pick_value(pick_values[pk.id], pick_model) for pk in received_picks)
 
         asset_value_delta = (
             (player_value_received + draft_capital_received / PICK_POINTS_TO_ASSET_SCALE)
@@ -339,9 +329,7 @@ def analyze_trade(db: Session, team_a_input, team_b_input) -> dict:
         financial_impact = contract_impact["net_cap_impact_this_year"]
 
         roster_fit_score, fit_notes = _roster_fit(team, received_players, team_needs, timeline)
-        risk_level, risk_drivers, risk_mitigators = _risk_assessment(
-            received_players, player_values, {}
-        )
+        risk_level, risk_drivers, risk_mitigators = _risk_assessment(received_players, player_values)
         timeline_alignment, timeline_notes = _timeline_alignment(
             team, received_players, received_picks, timeline
         )

@@ -5,6 +5,9 @@ import { DemoBanner } from "./components/layout/DemoBanner";
 import { Dashboard } from "./pages/Dashboard";
 import { TradeCenter } from "./pages/TradeCenter";
 import { DraftCapitalPage } from "./pages/DraftCapital";
+import { ScenariosPage } from "./pages/Scenarios";
+import { TradeFinderPage } from "./pages/TradeFinder";
+import { ValueDiscrepanciesPage } from "./pages/ValueDiscrepancies";
 import { api } from "./services/api";
 
 export default function App() {
@@ -27,6 +30,9 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/trade-center" element={<TradeCenter />} />
             <Route path="/draft-capital" element={<DraftCapitalPage />} />
+            <Route path="/scenarios" element={<ScenariosPage />} />
+            <Route path="/trade-finder" element={<TradeFinderPage />} />
+            <Route path="/value-discrepancies" element={<ValueDiscrepanciesPage />} />
           </Routes>
         </main>
       </div>

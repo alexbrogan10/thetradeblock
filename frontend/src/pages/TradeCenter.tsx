@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TeamAssetPanel } from "../components/trade/TeamAssetPanel";
 import { TradeAnalysisView } from "../components/trade/TradeAnalysisView";
+import { SensitivityPanel } from "../components/trade/SensitivityPanel";
 import { api } from "../services/api";
 import type { Team, TradeAnalysisResult } from "../types";
 
@@ -22,6 +23,7 @@ export function TradeCenter() {
   const [result, setResult] = useState<TradeAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   useEffect(() => {
     api.getTeams().then(setTeams).catch(() => {});
@@ -51,6 +53,23 @@ export function TradeCenter() {
     }
   }
 
+  async function handleSaveScenario() {
+    if (!teamAId || !teamBId) return;
+    const name = window.prompt("Name this scenario:", "Untitled Scenario");
+    if (name === null) return;
+    setSaveStatus("Saving…");
+    try {
+      const summary = await api.saveScenario({
+        name,
+        team_a: { team_id: teamAId, player_ids: teamAPlayers, draft_pick_ids: teamAPicks },
+        team_b: { team_id: teamBId, player_ids: teamBPlayers, draft_pick_ids: teamBPicks },
+      });
+      setSaveStatus(`Saved as "${summary.name}". View it under Scenarios.`);
+    } catch (e) {
+      setSaveStatus(`Failed to save: ${(e as Error).message}`);
+    }
+  }
+
   function reset() {
     setTeamAId(null);
     setTeamAPlayers([]);
@@ -60,6 +79,7 @@ export function TradeCenter() {
     setTeamBPicks([]);
     setResult(null);
     setError(null);
+    setSaveStatus(null);
   }
 
   return (
@@ -129,7 +149,28 @@ export function TradeCenter() {
         </div>
       )}
 
-      {result && <TradeAnalysisView result={result} />}
+      {result && teamAId && teamBId && (
+        <>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={handleSaveScenario}
+              className="rounded border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Save Scenario
+            </button>
+            {saveStatus && <span className="text-xs text-slate-500">{saveStatus}</span>}
+          </div>
+          <TradeAnalysisView result={result} />
+          <SensitivityPanel
+            teamAId={teamAId}
+            teamAPlayers={teamAPlayers}
+            teamAPicks={teamAPicks}
+            teamBId={teamBId}
+            teamBPlayers={teamBPlayers}
+            teamBPicks={teamBPicks}
+          />
+        </>
+      )}
     </div>
   );
 }
