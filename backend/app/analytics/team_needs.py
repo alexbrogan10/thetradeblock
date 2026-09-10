@@ -10,11 +10,10 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
+from app.analytics.player_valuation import bulk_evaluate_players, compute_position_average_aav
 from app.analytics.position_tables import POSITION_VALUE
 from app.models.contract import Contract
 from app.models.player import Player
-from app.models.player_statistic import PlayerStatistic
 
 ALL_POSITIONS = list(POSITION_VALUE.keys())
 
@@ -50,6 +49,11 @@ def evaluate_team_needs(db: Session, team_id: int) -> list[PositionNeed]:
     for p in players:
         by_position.setdefault(p.position, []).append(p)
 
+    valuation_by_id = bulk_evaluate_players(db, players, league_avg_aav)
+    contract_by_id = {
+        c.player_id: c for c in db.query(Contract).filter(Contract.player_id.in_([p.id for p in players])).all()
+    } if players else {}
+
     results: list[PositionNeed] = []
     for position in ALL_POSITIONS:
         roster = by_position.get(position, [])
@@ -70,12 +74,9 @@ def evaluate_team_needs(db: Session, team_id: int) -> list[PositionNeed]:
             )
             continue
 
-        valuations = []
-        for player in roster:
-            seasons = db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
-            contract = db.query(Contract).filter(Contract.player_id == player.id).first()
-            result = evaluate_player(player, seasons, contract, league_avg_aav)
-            valuations.append((player, contract, result))
+        valuations = [
+            (player, contract_by_id.get(player.id), valuation_by_id[player.id]) for player in roster
+        ]
 
         valuations.sort(key=lambda pv: pv[2].valuation, reverse=True)
         starter, starter_contract, starter_val = valuations[0]

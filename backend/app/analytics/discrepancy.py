@@ -10,10 +10,9 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
+from app.analytics.player_valuation import bulk_evaluate_players, compute_position_average_aav
 from app.models.contract import Contract
 from app.models.player import Player
-from app.models.player_statistic import PlayerStatistic
 
 
 @dataclass
@@ -40,15 +39,18 @@ def find_value_discrepancies(
     players = query.all()
 
     league_avg_aav = compute_position_average_aav(db)
+    contract_by_id = {
+        c.player_id: c for c in db.query(Contract).filter(Contract.player_id.in_([p.id for p in players])).all()
+    }
+    valuation_by_id = bulk_evaluate_players(db, players, league_avg_aav)
     results: list[Discrepancy] = []
 
     for player in players:
-        contract = db.query(Contract).filter(Contract.player_id == player.id).first()
+        contract = contract_by_id.get(player.id)
         if not contract or contract.annual_value <= 0:
             continue
 
-        seasons = db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
-        valuation = evaluate_player(player, seasons, contract, league_avg_aav)
+        valuation = valuation_by_id[player.id]
 
         expected_score_for_pay = min(
             100.0, (contract.annual_value / max(league_avg_aav.get(player.position, 8.0), 0.1)) * 50

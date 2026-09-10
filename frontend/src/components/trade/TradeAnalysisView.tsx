@@ -1,6 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Card } from "../common/Card";
 import { AssessmentBadge, RiskBadge } from "../common/ScoreBadge";
+import {
+  downloadTradeReportCSV,
+  downloadTradeReportJSON,
+  openPrintableTradeReport,
+} from "../../utils/tradeReportExport";
 import type { TeamAnalysis, TradeAnalysisResult } from "../../types";
 
 function Stat({ label, value, positiveGood = true }: { label: string; value: number; positiveGood?: boolean }) {
@@ -203,6 +208,26 @@ export function TradeAnalysisView({ result }: { result: TradeAnalysisResult }) {
           {result.disclaimer} Player model {result.player_valuation_model_version} · Draft
           pick model {result.draft_pick_model_version}.
         </p>
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+          <button
+            onClick={() => downloadTradeReportJSON(result)}
+            className="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Export JSON
+          </button>
+          <button
+            onClick={() => downloadTradeReportCSV(result)}
+            className="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => openPrintableTradeReport(result)}
+            className="rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Executive Report (Print / Save as PDF)
+          </button>
+        </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

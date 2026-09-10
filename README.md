@@ -228,10 +228,35 @@ export DATABASE_URL=postgresql+psycopg2://tradeblock:tradeblock@localhost:5432/t
 python -m pytest tests/ -v
 ```
 
-33 tests cover player valuation (including missing-data and extreme-value
+85 tests cover player valuation (including missing-data and extreme-value
 edge cases), draft-pick valuation, the trade engine (multi-asset trades,
 duplicate/invalid assets, same-team rejection, missing contract data,
-future picks), and the API layer.
+future picks), Team Needs/Fit/Competitive Window/Roster Impact, trade
+scenarios and comparison, sensitivity analysis, the discrepancy finder
+and trade finder, historical trades and player similarity, the ML
+projection model, and the full API layer.
+
+## Deployment
+
+The project is structured so the same three services (db, backend,
+frontend) map onto any of these without code changes:
+
+- **Docker Compose** (any host / AWS / Azure): `docker-compose.yml` is
+  the source of truth — see Installation above.
+- **Render**: `render.yaml` at the repo root is a ready-to-use
+  [Blueprint](https://render.com/docs/blueprint-spec) — a managed
+  Postgres instance, the FastAPI backend (native Python runtime), and
+  the frontend as a static build. Connect the repo in the Render
+  dashboard and it provisions all three.
+- **Railway**: create a service per Dockerfile (`backend/Dockerfile`,
+  `frontend/Dockerfile`) plus a Postgres plugin, and set the same
+  environment variables as `.env.example`.
+
+After the first deploy on any platform, run the data pipeline once
+(`scripts/generate_demo_data.py` then `scripts/seed_demo_data.py`) —
+`models/player_performance_projection_v1.joblib` is committed, so
+`scripts/train_performance_projection.py` is only needed after
+re-seeding with different data.
 
 ## Limitations
 
@@ -272,9 +297,13 @@ critical path yet.
   metrics and documented limitations (`/model-versions`), and Trade
   Matching (`GET /api/team/{id}/trade-matches`) that automatically runs
   the Trade Finder against every Critical/Major-Need position.
-- **Phase 6 — Production Polish**: exportable reports (PDF/CSV/JSON),
-  advanced filtering, performance optimization, deployment configs for
-  AWS/Azure/Render/Railway.
+- ✅ **Phase 6 — Production Polish**: Executive Trade Report exportable
+  as JSON, CSV, or print-to-PDF directly from the Trade Center; a
+  Players browse page with team/position/name filtering; N+1 query
+  fixes across the dashboard, discrepancy finder, Team Needs, and
+  Competitive Window (bulk player valuation instead of per-player
+  queries); a `render.yaml` Blueprint for one-click Render deployment
+  (Docker Compose already covers self-hosted/AWS/Azure/Railway).
 
 ## Front Office Analytics Suite
 

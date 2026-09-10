@@ -1,4 +1,4 @@
-from app.analytics.player_valuation import evaluate_player
+from app.analytics.player_valuation import bulk_evaluate_players, evaluate_player
 
 
 def test_strong_qb_outvalues_weak_qb(make_team, make_player, make_stats, make_contract):
@@ -76,6 +76,28 @@ def test_valuation_never_below_zero_or_above_hundred(make_team, make_player, mak
 
     result = evaluate_player(player, [stat], None, {})
     assert 0 <= result.valuation <= 100
+
+
+def test_bulk_evaluate_matches_individual_evaluation(db_session, make_team, make_player, make_stats, make_contract):
+    team = make_team()
+    p1 = make_player(team, position="WR", age=26)
+    make_stats(p1, stats={"receptions": 80, "targets": 120, "rec_yards": 1100, "rec_td": 8, "yards_per_reception": 13.7})
+    make_contract(p1, annual_value=12, years_remaining=3)
+
+    p2 = make_player(team, position="WR", age=30)  # no stats/contract
+
+    results = bulk_evaluate_players(db_session, [p1, p2], {})
+    assert set(results.keys()) == {p1.id, p2.id}
+
+    # Sanity: bulk result for p1 should reflect its actual stats (non-neutral performance)
+    assert results[p1.id].performance_score != 50.0
+    # p2 has no stats/contract -> neutral defaults
+    assert results[p2.id].performance_score == 50.0
+    assert results[p2.id].contract_score == 50.0
+
+
+def test_bulk_evaluate_empty_list_returns_empty_dict(db_session):
+    assert bulk_evaluate_players(db_session, [], {}) == {}
 
 
 class _FakeContract:

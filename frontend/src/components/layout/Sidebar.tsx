@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 
 const NAV_ITEMS = [
   { to: "/", label: "Front Office Dashboard" },
+  { to: "/players", label: "Players" },
   { to: "/trade-center", label: "Trade Center" },
   { to: "/draft-capital", label: "Draft Capital" },
   { to: "/scenarios", label: "Scenarios" },

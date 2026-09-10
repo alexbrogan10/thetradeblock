@@ -10,6 +10,7 @@ import { TradeFinderPage } from "./pages/TradeFinder";
 import { ValueDiscrepanciesPage } from "./pages/ValueDiscrepancies";
 import { HistoricalTradesPage } from "./pages/HistoricalTrades";
 import { ModelVersionsPage } from "./pages/ModelVersions";
+import { PlayersPage } from "./pages/Players";
 import { api } from "./services/api";
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
         <main className="flex-1 overflow-y-auto bg-slate-100 p-6">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/players" element={<PlayersPage />} />
             <Route path="/trade-center" element={<TradeCenter />} />
             <Route path="/draft-capital" element={<DraftCapitalPage />} />
             <Route path="/scenarios" element={<ScenariosPage />} />

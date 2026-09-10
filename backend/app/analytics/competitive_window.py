@@ -13,11 +13,9 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app.analytics.draft_pick_valuation import evaluate_draft_pick
-from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
-from app.models.contract import Contract
+from app.analytics.player_valuation import bulk_evaluate_players, compute_position_average_aav
 from app.models.draft_pick import DraftPick
 from app.models.player import Player
-from app.models.player_statistic import PlayerStatistic
 from app.models.team import Team
 
 CLASSIFICATIONS_HIGH_TO_LOW = ["Win Now", "Contender", "Competitive", "Developing", "Rebuilding"]
@@ -42,17 +40,11 @@ def _team_strength(db: Session, players: list[Player], league_avg_aav: dict) -> 
     for p in players:
         by_position.setdefault(p.position, []).append(p)
 
+    valuation_by_id = bulk_evaluate_players(db, players, league_avg_aav)
     starter_scores = []
     for position, roster in by_position.items():
-        best = None
-        for player in roster:
-            seasons = db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
-            contract = db.query(Contract).filter(Contract.player_id == player.id).first()
-            result = evaluate_player(player, seasons, contract, league_avg_aav)
-            if best is None or result.valuation > best:
-                best = result.valuation
-        if best is not None:
-            starter_scores.append(best)
+        best = max(valuation_by_id[p.id].valuation for p in roster)
+        starter_scores.append(best)
     return sum(starter_scores) / len(starter_scores) if starter_scores else 50.0
 
 

@@ -10,14 +10,13 @@ from sqlalchemy.orm import Session
 
 from app.analytics.discrepancy import find_value_discrepancies
 from app.analytics.draft_pick_valuation import evaluate_draft_pick
-from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
+from app.analytics.player_valuation import bulk_evaluate_players, compute_position_average_aav
 from app.api.team import _build_draft_capital
 from app.config import settings
 from app.database.session import get_db
 from app.models.contract import Contract
 from app.models.draft_pick import DraftPick
 from app.models.player import Player
-from app.models.player_statistic import PlayerStatistic
 from app.models.team import Team
 from app.schemas.team import DraftCapitalOut
 
@@ -57,12 +56,11 @@ def dashboard_overview(db: Session = Depends(get_db)):
     players = db.query(Player).filter(Player.status == "active").all()
     league_avg_aav = compute_position_average_aav(db)
 
-    valuations = []
-    for player in players:
-        seasons = db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
-        contract = db.query(Contract).filter(Contract.player_id == player.id).first()
-        result = evaluate_player(player, seasons, contract, league_avg_aav)
-        valuations.append((player, result))
+    valuation_by_id = bulk_evaluate_players(db, players, league_avg_aav)
+    contract_by_id = {
+        c.player_id: c for c in db.query(Contract).filter(Contract.player_id.in_([p.id for p in players])).all()
+    }
+    valuations = [(player, valuation_by_id[player.id]) for player in players]
 
     valuations.sort(key=lambda pv: pv[1].valuation, reverse=True)
     top_players = [
@@ -115,7 +113,7 @@ def dashboard_overview(db: Session = Depends(get_db)):
         if v.confidence < 45:
             alerts.append(f"Low-confidence valuation for {p.name} — limited underlying data.")
     for p, v in valuations:
-        contract = db.query(Contract).filter(Contract.player_id == p.id).first()
+        contract = contract_by_id.get(p.id)
         if contract and contract.years_remaining <= 1 and v.valuation >= 70:
             alerts.append(f"{p.name} ({p.team.abbreviation if p.team else '—'}) is a high-value player entering the final year of his contract — worth further evaluation.")
 

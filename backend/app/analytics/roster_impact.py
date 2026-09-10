@@ -14,10 +14,8 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.analytics.player_valuation import evaluate_player
-from app.models.contract import Contract
+from app.analytics.player_valuation import bulk_evaluate_players
 from app.models.player import Player
-from app.models.player_statistic import PlayerStatistic
 
 
 @dataclass
@@ -47,10 +45,11 @@ def compute_roster_impact(
 ) -> list[PositionImpact]:
     roster = db.query(Player).filter(Player.team_id == team_id, Player.status == "active").all()
 
+    all_players = list({p.id: p for p in (roster + received_players)}.values())
+    valuation_by_id = bulk_evaluate_players(db, all_players, league_avg_aav)
+
     def valuation_of(player: Player) -> float:
-        seasons = db.query(PlayerStatistic).filter(PlayerStatistic.player_id == player.id).all()
-        contract = db.query(Contract).filter(Contract.player_id == player.id).first()
-        return evaluate_player(player, seasons, contract, league_avg_aav).valuation
+        return valuation_by_id[player.id].valuation
 
     positions = {p.position for p in roster} | {p.position for p in received_players}
 

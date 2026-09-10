@@ -144,6 +144,35 @@ def compute_position_average_aav(db: Session) -> dict[str, float]:
     return {pos: mean(values) for pos, values in by_position.items()}
 
 
+def bulk_evaluate_players(
+    db: Session, players: list[Player], league_avg_aav: dict[str, float]
+) -> dict[int, "ValuationResult"]:
+    """Evaluates many players with a fixed, small number of queries
+    instead of the 2-per-player pattern that shows up if each valuation
+    is fetched independently (Section 57 -- performance optimization for
+    endpoints like the dashboard and value-discrepancy finder that
+    evaluate the entire league at once)."""
+    if not players:
+        return {}
+
+    player_ids = [p.id for p in players]
+    seasons_by_player: dict[int, list[PlayerStatistic]] = {pid: [] for pid in player_ids}
+    for stat in db.query(PlayerStatistic).filter(PlayerStatistic.player_id.in_(player_ids)).all():
+        seasons_by_player[stat.player_id].append(stat)
+
+    contract_by_player: dict[int, Contract] = {
+        c.player_id: c
+        for c in db.query(Contract).filter(Contract.player_id.in_(player_ids)).all()
+    }
+
+    return {
+        player.id: evaluate_player(
+            player, seasons_by_player.get(player.id, []), contract_by_player.get(player.id), league_avg_aav
+        )
+        for player in players
+    }
+
+
 def evaluate_player(
     player: Player,
     seasons: list[PlayerStatistic],
