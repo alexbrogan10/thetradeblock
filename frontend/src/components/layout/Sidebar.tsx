@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: "/scenarios", label: "Scenarios" },
   { to: "/trade-finder", label: "Trade Finder" },
   { to: "/value-discrepancies", label: "Value Discrepancies" },
+  { to: "/historical-trades", label: "Historical Trades" },
 ];
 
 export function Sidebar() {

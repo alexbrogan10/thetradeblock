@@ -1,4 +1,5 @@
 import type {
+  ComparableTrade,
   DashboardOverview,
   DraftCapital,
   DraftPick,
@@ -8,6 +9,7 @@ import type {
   ScenarioDetail,
   ScenarioSummary,
   SensitivityResult,
+  SimilarPlayer,
   Team,
   TeamNeeds,
   Timeline,
@@ -93,6 +95,18 @@ export const api = {
     const query = qs.toString();
     return request<ValueDiscrepancy[]>(`/api/analytics/value-discrepancies${query ? `?${query}` : ""}`);
   },
+
+  getComparableTrades: (params: { position?: string; age_min?: number; age_max?: number; limit?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.position) qs.set("position", params.position);
+    if (params.age_min !== undefined) qs.set("age_min", String(params.age_min));
+    if (params.age_max !== undefined) qs.set("age_max", String(params.age_max));
+    if (params.limit !== undefined) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return request<ComparableTrade[]>(`/api/historical-trades/comparable${query ? `?${query}` : ""}`);
+  },
+  getSimilarPlayers: (playerId: number, topN = 5) =>
+    request<SimilarPlayer[]>(`/api/players/${playerId}/similar?top_n=${topN}`),
 
   findTradeTargets: (payload: {
     team_id: number;

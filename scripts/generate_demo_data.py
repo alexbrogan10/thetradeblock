@@ -324,15 +324,77 @@ def main():
 
     draft_df = pd.DataFrame(draft_rows)
 
+    # Historical trades: entirely synthetic (Section 24). Existing demo
+    # players are reused as the traded assets, with age/position
+    # *snapshotted at the time of the (synthetic) trade* rather than
+    # using their current-day age -- there is no separate historical
+    # player registry in this demo dataset.
+    outcome_notes = [
+        "Modest role for the acquired player; depth-for-depth swap.",
+        "Acquired player became an immediate starter for the new team.",
+        "Change-of-scenery move; production held roughly steady.",
+        "Rebuilding team prioritized draft capital over immediate production.",
+        "Contending team paid a premium for a proven starter.",
+        "Player's role diminished after the move.",
+        "Both sides described the move as addressing a positional need.",
+    ]
+    historical_trades_rows, historical_assets_rows = [], []
+    trade_id = 1
+    asset_id = 1
+    CURRENT_YEAR = 2026
+    for _ in range(55):
+        team_a, team_b = random.sample(teams_rows, 2)
+        trade_year = random.randint(2021, 2025)
+        years_since = CURRENT_YEAR - trade_year
+        trade_date = f"{trade_year}-{random.randint(1,12):02d}-{random.randint(1,28):02d}"
+
+        historical_trades_rows.append(
+            {
+                "id": trade_id,
+                "date": trade_date,
+                "team_a_id": team_a["id"],
+                "team_b_id": team_b["id"],
+                "notes": random.choice(outcome_notes),
+            }
+        )
+
+        for from_team, to_team in ((team_a, team_b), (team_b, team_a)):
+            num_assets = random.choice([1, 1, 1, 2])
+            asset_players = random.sample(players_rows, num_assets)
+            for p in asset_players:
+                age_at_trade = max(20, p["age"] - years_since)
+                historical_assets_rows.append(
+                    {
+                        "id": asset_id,
+                        "trade_id": trade_id,
+                        "team_from_id": from_team["id"],
+                        "team_to_id": to_team["id"],
+                        "asset_type": "player",
+                        "asset_id": p["id"],
+                        "label": f"{p['name']} ({p['position']})",
+                        "player_age_at_trade": age_at_trade,
+                        "player_position_at_trade": p["position"],
+                        "value_at_trade": 0.0,
+                    }
+                )
+                asset_id += 1
+        trade_id += 1
+
+    historical_trades_df = pd.DataFrame(historical_trades_rows)
+    historical_assets_df = pd.DataFrame(historical_assets_rows)
+
     teams_df.to_csv(RAW_DIR / "teams.csv", index=False)
     players_df.to_csv(RAW_DIR / "players.csv", index=False)
     stats_df.to_csv(RAW_DIR / "player_stats.csv", index=False)
     contracts_df.to_csv(RAW_DIR / "contracts.csv", index=False)
     draft_df.to_csv(RAW_DIR / "draft_picks.csv", index=False)
+    historical_trades_df.to_csv(RAW_DIR / "historical_trades.csv", index=False)
+    historical_assets_df.to_csv(RAW_DIR / "historical_trade_assets.csv", index=False)
 
     print(f"Generated {len(teams_df)} teams, {len(players_df)} players, "
           f"{len(stats_df)} stat lines, {len(contracts_df)} contracts, "
-          f"{len(draft_df)} draft picks -> {RAW_DIR}")
+          f"{len(draft_df)} draft picks, {len(historical_trades_df)} historical "
+          f"trades ({len(historical_assets_df)} assets) -> {RAW_DIR}")
 
 
 if __name__ == "__main__":

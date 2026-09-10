@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.analytics.player_similarity import find_similar_players
 from app.analytics.player_valuation import compute_position_average_aav, evaluate_player
 from app.config import settings
 from app.database.session import get_db
 from app.models.contract import Contract
 from app.models.player import Player
 from app.models.player_statistic import PlayerStatistic
+from app.schemas.historical import SimilarPlayerOut
 from app.schemas.player import PlayerDetailOut, PlayerOut
 
 router = APIRouter(prefix="/api/players", tags=["players"])
@@ -57,3 +59,12 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
         "notes": result.notes,
     }
     return out
+
+
+@router.get("/{player_id}/similar", response_model=list[SimilarPlayerOut])
+def get_similar_players(player_id: int, top_n: int = 5, db: Session = Depends(get_db)):
+    try:
+        results = find_similar_players(db, player_id, top_n=top_n)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return [r.__dict__ for r in results]

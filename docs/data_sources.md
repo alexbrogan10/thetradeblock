@@ -12,6 +12,11 @@ per-file breakdown of fields, generation method, and limitations.
   generated. Not real people, not real performance data.
 - Draft picks: synthetic ownership across three draft years with
   simulated historical pick trades.
+- Historical trades: synthetic trades (2021-2025) reusing the same
+  synthetic player pool, with player age/position *snapshotted at the
+  time of the trade* rather than using current-day values. Outcome
+  notes are short, neutral, illustrative text — not a claim that any
+  historical trade predicts a future one (Section 24).
 
 **This demo dataset must never be presented as real NFL data**, per
 product rule (Section 56, #20) and the in-app "DEMO DATA" banner.

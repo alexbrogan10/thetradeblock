@@ -244,6 +244,32 @@ export interface TradeTarget {
   risk_level: string;
 }
 
+export interface ComparableTrade {
+  trade_id: number;
+  date: string;
+  team_a: string;
+  team_b: string;
+  matching_player: string;
+  matching_position: string;
+  matching_age_at_trade: number;
+  similarity_score: number;
+  similarities: string[];
+  differences: string[];
+  other_assets: string[];
+  outcome_note: string;
+}
+
+export interface SimilarPlayer {
+  player_id: number;
+  name: string;
+  position: string;
+  team: string | null;
+  age: number;
+  valuation: number;
+  similarity_pct: number;
+  explanation: string;
+}
+
 export interface DashboardOverview {
   demo_mode: boolean;
   player_valuation_model_version: string;

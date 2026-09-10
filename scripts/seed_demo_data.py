@@ -31,8 +31,10 @@ from app.analytics.player_valuation import (  # noqa: E402
 )
 from app.database.base import Base  # noqa: E402
 from app.database.session import SessionLocal, engine  # noqa: E402
+import app.models as _all_models  # noqa: E402,F401  (registers every model on Base.metadata)
 from app.models.contract import Contract  # noqa: E402
 from app.models.draft_pick import DraftPick  # noqa: E402
+from app.models.historical_trade import HistoricalTrade, TradeAsset  # noqa: E402
 from app.models.player import Player  # noqa: E402
 from app.models.player_statistic import PlayerStatistic  # noqa: E402
 from app.models.team import Team  # noqa: E402
@@ -68,18 +70,19 @@ def main():
     stats_df = load_csv("player_stats.csv")
     contracts_df = load_csv("contracts.csv")
     draft_df = load_csv("draft_picks.csv")
+    historical_trades_df = load_csv("historical_trades.csv")
+    historical_assets_df = load_csv("historical_trade_assets.csv")
 
     players_df["position"] = players_df["position"].str.upper().str.strip()
 
     db = SessionLocal()
     try:
         print("Clearing existing demo data...")
-        db.query(PlayerValuation).delete()
-        db.query(Contract).delete()
-        db.query(PlayerStatistic).delete()
-        db.query(DraftPick).delete()
-        db.query(Player).delete()
-        db.query(Team).delete()
+        # Delete in reverse dependency order so FK constraints never block a
+        # re-seed, regardless of what a prior session (e.g. saved trade
+        # scenarios) left behind.
+        for table in reversed(Base.metadata.sorted_tables):
+            db.execute(table.delete())
         db.commit()
 
         print(f"Loading {len(teams_df)} teams...")
@@ -153,6 +156,37 @@ def main():
                     original_team_id=int(row.original_team_id),
                     current_team_id=int(row.current_team_id),
                     estimated_value=0.0,
+                )
+            )
+        db.commit()
+
+        print(f"Loading {len(historical_trades_df)} historical trades...")
+        for row in historical_trades_df.itertuples():
+            db.add(
+                HistoricalTrade(
+                    id=row.id,
+                    date=row.date,
+                    team_a_id=int(row.team_a_id),
+                    team_b_id=int(row.team_b_id),
+                    notes=row.notes,
+                )
+            )
+        db.commit()
+
+        print(f"Loading {len(historical_assets_df)} historical trade assets...")
+        for row in historical_assets_df.itertuples():
+            db.add(
+                TradeAsset(
+                    id=row.id,
+                    trade_id=int(row.trade_id),
+                    team_from_id=int(row.team_from_id),
+                    team_to_id=int(row.team_to_id),
+                    asset_type=row.asset_type,
+                    asset_id=int(row.asset_id),
+                    label=row.label,
+                    player_age_at_trade=None if pd.isna(row.player_age_at_trade) else int(row.player_age_at_trade),
+                    player_position_at_trade=row.player_position_at_trade,
+                    value_at_trade=float(row.value_at_trade),
                 )
             )
         db.commit()

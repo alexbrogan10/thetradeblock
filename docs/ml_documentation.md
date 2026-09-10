@@ -1,6 +1,18 @@
 # Machine Learning — Status and Plan
 
-## Phase 1 (current): no ML in the critical path
+## Phase 4 (shipped): Player Similarity via KNN
+
+`backend/app/analytics/player_similarity.py` uses scikit-learn's
+`NearestNeighbors` (cosine metric) over a standardized feature vector
+(age, performance score, projection score, age-curve position, contract
+AAV, years remaining), restricted to players at the same position. This
+is the one place genuine ML tooling is in the current critical path —
+everything else (valuation, draft-pick value, trade assessment) remains
+a transparent statistical formula (see below). Output is always framed
+as "has a similar statistical and contractual profile," never a
+prediction that one player will become another.
+
+## Phase 1-4 (current): no *predictive* ML in the critical path
 
 Every score currently shown by The Trade Block (player valuation,
 draft-pick valuation, trade assessment) is produced by a **transparent,

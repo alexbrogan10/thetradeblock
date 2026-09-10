@@ -240,8 +240,10 @@ critical path yet.
   Trade Finder (`/trade-finder`) with acquisition-cost estimation,
   Sensitivity Analysis + "What Would Change This?" embedded in the
   Trade Center.
-- **Phase 4 — Historical Analytics**: Historical Trade Database,
-  comparable-trade search, Player Similarity (KNN).
+- ✅ **Phase 4 — Historical Analytics**: synthetic Historical Trade
+  Database with comparable-trade search
+  (`/historical-trades`, `GET /api/historical-trades/comparable`), and
+  Player Similarity via scikit-learn KNN (`GET /api/players/{id}/similar`).
 - **Phase 5 — Machine Learning**: performance projection, value models,
   trade matching, model versioning, feature importance.
 - **Phase 6 — Production Polish**: exportable reports (PDF/CSV/JSON),
